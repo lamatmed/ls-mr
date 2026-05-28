@@ -7,10 +7,11 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig = {
+  serverExternalPackages: ['uploadthing'],
   experimental: {
     serverActions: {
       bodySizeLimit: '5mb',
-    }
+    },
   },
   eslint: {
     ignoreDuringBuilds: true,
