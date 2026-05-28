@@ -38,7 +38,9 @@ export default function DepensesPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
-  const { t, currency } = useLanguage();
+  const { t, currency, lang } = useLanguage();
+  const localeMap: Record<string, string> = { ar: 'ar-EG', fr: 'fr-FR', en: 'en-US', pt: 'pt-PT', es: 'es-ES' };
+  const locale = localeMap[lang] ?? 'fr-FR';
 
   const [type, setType] = useState("رواتب العمال");
   const [amount, setAmount] = useState<number | "">("");
@@ -300,7 +302,7 @@ export default function DepensesPage() {
                             <div className="flex items-center gap-2 mt-1 opacity-60">
                               <FiCalendar size={12} />
                               <span className="text-[10px] font-bold tracking-widest uppercase">
-                                {new Date(expense.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                {new Date(expense.createdAt).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' })}
                               </span>
                             </div>
                             {expense.description && (
