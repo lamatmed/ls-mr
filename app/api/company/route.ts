@@ -6,19 +6,19 @@ export async function PUT(request: Request) {
     const body = await request.json();
     const { name, address, contact, nif, currency, logo } = body;
 
-    const data: Record<string, string | null> = {
-      name: name || '',
-      address: address || '',
-      contact: contact || '',
-      nif: nif || null,
-      currency: currency || 'MRU',
+    const base = {
+      name: (name || '') as string,
+      address: (address || '') as string,
+      contact: (contact || '') as string,
+      nif: (nif || null) as string | null,
+      currency: (currency || 'MRU') as string,
+      ...(logo !== undefined ? { logo: logo as string | null } : {}),
     };
-    if (logo !== undefined) data.logo = logo;
 
     await prisma.company.upsert({
       where: { id: '1' },
-      update: data,
-      create: { id: '1', ...data },
+      update: base,
+      create: { id: '1', ...base },
     });
 
     return NextResponse.json({ success: true });
