@@ -1,1 +1,0 @@
-doc.text("Fatura gerada por Stock-App V1.0.0", 40, finalY + 30, { align: "center" });

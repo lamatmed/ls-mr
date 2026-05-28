@@ -30,6 +30,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         };
     
         setTimeout(fetchUser, 1000); // Attendre 1 seconde avant d'exécuter fetchUser
-      }, []);
+      }, [router]);
   return <EditProduct id={id} />;
 }

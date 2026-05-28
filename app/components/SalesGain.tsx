@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from "react";
-import Loader from "./Loader";
-import { FaSearch } from "react-icons/fa";
+import React from "react";
 
 interface Sale {
   id: string;
   productName: string;
   quantity: number;
-  totalPrice: number; // Prix total de la vente
-  purchasePrice: number; // Prix d'achat total pour cette vente
+  totalPrice: number;
+  purchasePrice: number;
   createdAt: string;
 }
 
@@ -15,176 +13,81 @@ interface SalesHistoryProps {
   sales: Sale[];
 }
 
-const SalesHistory: React.FC<SalesHistoryProps> = ({ sales }) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(7);
-  const [loading, setLoading] = useState(true);
-  const [searchDate, setSearchDate] = useState("");
-
-  useEffect(() => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-    }, 500);
-  }, [sales]);
-
-  // Filtrer les ventes par date sélectionnée
-  const filteredSales = searchDate
-    ? sales.filter((sale) => sale.createdAt.startsWith(searchDate))
-    : sales;
-
-  // Pagination
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentSales = filteredSales.slice(indexOfFirstItem, indexOfLastItem);
-
-  // Calcul des totaux des ventes et des gains par mois et par année
+const SalesGain: React.FC<SalesHistoryProps> = ({ sales }) => {
   const totalByMonth: Record<string, number> = {};
   const totalByYear: Record<string, number> = {};
   const gainByMonth: Record<string, number> = {};
   const gainByYear: Record<string, number> = {};
 
-  sales.forEach((sale) => {
+  sales.forEach(sale => {
     const date = new Date(sale.createdAt);
     const month = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}`;
     const year = `${date.getFullYear()}`;
-    const gain = sale.totalPrice - sale.purchasePrice; // Calcul du gain
+    const gain = sale.totalPrice - sale.purchasePrice;
 
-    if (!totalByMonth[month]) totalByMonth[month] = 0;
-    totalByMonth[month] += sale.totalPrice;
-
-    if (!totalByYear[year]) totalByYear[year] = 0;
-    totalByYear[year] += sale.totalPrice;
-
-    if (!gainByMonth[month]) gainByMonth[month] = 0;
-    gainByMonth[month] += gain;
-
-    if (!gainByYear[year]) gainByYear[year] = 0;
-    gainByYear[year] += gain;
+    totalByMonth[month] = (totalByMonth[month] || 0) + sale.totalPrice;
+    totalByYear[year] = (totalByYear[year] || 0) + sale.totalPrice;
+    gainByMonth[month] = (gainByMonth[month] || 0) + gain;
+    gainByYear[year] = (gainByYear[year] || 0) + gain;
   });
 
-  // Changer de page
-  const nextPage = () => {
-    if (currentPage < Math.ceil(filteredSales.length / itemsPerPage)) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  const prevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
+  const thCls = "border border-slate-200 dark:border-border px-4 py-2 text-xs font-black text-slate-500 dark:text-muted-foreground text-right bg-slate-50 dark:bg-secondary";
+  const tdCls = "border border-slate-100 dark:border-border px-4 py-2 text-xs font-bold text-slate-700 dark:text-foreground text-right";
 
   return (
-    <div className="mt-6 bg-white p-6 rounded-lg shadow-md">
-      {/* حقل البحث بالتاريخ */}
-      <div className="mb-4 flex items-center">
-        <input
-          type="date"
-          value={searchDate}
-          onChange={(e) => setSearchDate(e.target.value)}
-          className="border p-2 rounded-lg text-black w-100"
-        />
-        <FaSearch className="ml-2 text-blue-500" />
-      </div>
-
-      {loading ? (
-        <Loader />
-      ) : (
-        <>
-          {/* جدول المبيعات */}
-          <table className="min-w-full border-collapse border">
+    <div className="mt-6 bg-white dark:bg-card p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-border space-y-6">
+      <div>
+        <h3 className="text-sm font-black text-slate-700 dark:text-foreground mb-3">Par Mois</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-white">
-                <th className="border p-2 text-black">المنتج</th>
-                <th className="border p-2 text-black">الكمية</th>
-                <th className="border p-2 text-black">السعر الإجمالي</th>
-                <th className="border p-2 text-black">الربح</th>
-                <th className="border p-2 text-black">التاريخ</th>
+              <tr>
+                <th className={thCls}>Mois</th>
+                <th className={thCls}>Total Vente</th>
+                <th className={thCls}>Gain</th>
               </tr>
             </thead>
             <tbody>
-              {currentSales.length > 0 ? (
-                currentSales.map((sale) => (
-                  <tr key={sale.id} className="border">
-                    <td className="border p-2 text-black">{sale.productName}</td>
-                    <td className="border p-2 text-black">{sale.quantity}</td>
-                    <td className="border p-2 text-black">{sale.totalPrice} Kz</td>
-                    <td className="border p-2 text-black">
-                      {(sale.totalPrice - sale.purchasePrice).toFixed(2)} Kz
-                    </td>
-                    <td className="border p-2 text-black">
-                      {new Date(sale.createdAt).toLocaleString()}
-                    </td>
+              {Array.from({ length: 12 }, (_, i) => {
+                const key = `${new Date().getFullYear()}-${(i + 1).toString().padStart(2, "0")}`;
+                return (
+                  <tr key={key} className="hover:bg-slate-50 dark:hover:bg-secondary/50 transition-colors">
+                    <td className={tdCls}>{key}</td>
+                    <td className={tdCls}>{totalByMonth[key]?.toFixed(2) || "0.00"}</td>
+                    <td className={`${tdCls} text-emerald-600 dark:text-emerald-400`}>{gainByMonth[key]?.toFixed(2) || "0.00"}</td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={5} className="p-2 text-center text-black">
-                    لا توجد مبيعات مسجلة لهذا التاريخ.
-                  </td>
-                </tr>
-              )}
+                );
+              })}
             </tbody>
           </table>
+        </div>
+      </div>
 
-          {/* التنقل بين الصفحات */}
-          <div className="flex justify-between mt-4">
-            <button
-              onClick={prevPage}
-              disabled={currentPage === 1}
-              className={`px-4 py-2 bg-blue-900 text-white rounded ${currentPage === 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600"
-                }`}
-            >
-              السابق
-            </button>
-            <span className="text-lg font-bold text-black">
-              الصفحة {currentPage} / {Math.ceil(filteredSales.length / itemsPerPage)}
-            </span>
-            <button
-              onClick={nextPage}
-              disabled={currentPage === Math.ceil(filteredSales.length / itemsPerPage)}
-              className={`px-4 py-2 bg-blue-900 text-white rounded ${currentPage === Math.ceil(filteredSales.length / itemsPerPage)
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-blue-600"
-                }`}
-            >
-              التالي
-            </button>
-          </div>
-
-          {/* إجمالي المبيعات والأرباح */}
-          <div className="mt-6">
-            <h2 className="text-xl font-bold text-blue-600">إجمالي المبيعات والأرباح</h2>
-
-            <div className="mt-4">
-              <h3 className="text-lg font-semibold text-black">حسب الشهر :</h3>
-              <ul className="list-disc ml-4 text-black">
-                {Object.entries(totalByMonth).map(([month, total]) => (
-                  <li key={month}>
-                    <strong>{month}</strong> : {total.toFixed(2)} KZ (الربح: {gainByMonth[month].toFixed(2)} KZ)
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="mt-4">
-              <h3 className="text-lg font-semibold text-black">حسب السنة :</h3>
-              <ul className="list-disc ml-4 text-black">
-                {Object.entries(totalByYear).map(([year, total]) => (
-                  <li key={year}>
-                    <strong>{year}</strong> : {total.toFixed(2)} MRU (الربح: {gainByYear[year].toFixed(2)} MRU)
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </>
-      )}
+      <div>
+        <h3 className="text-sm font-black text-slate-700 dark:text-foreground mb-3">Par Année</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr>
+                <th className={thCls}>Année</th>
+                <th className={thCls}>Total Vente</th>
+                <th className={thCls}>Gain</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(totalByYear).map(([year, total]) => (
+                <tr key={year} className="hover:bg-slate-50 dark:hover:bg-secondary/50 transition-colors">
+                  <td className={tdCls}>{year}</td>
+                  <td className={tdCls}>{total.toFixed(2)}</td>
+                  <td className={`${tdCls} text-emerald-600 dark:text-emerald-400`}>{gainByYear[year].toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
-
   );
 };
 
-export default SalesHistory;
+export default SalesGain;

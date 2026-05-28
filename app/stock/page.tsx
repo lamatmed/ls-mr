@@ -89,12 +89,12 @@ export default function ProductsList() {
 
   return (
     <div className="max-w-6xl mx-auto p-6 bg-white mt-5">
-      <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">📦 منتجات</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">📦 Liste des Produits</h1>
 
       <input
         className="border p-3 w-full mb-6 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-black text-black"
         type="text"
-        placeholder="🔍 البحث عن طريق الرمز أو الرمز الشريطي..."
+        placeholder="🔍 Rechercher par code ou code barre..."
         value={search}
         onChange={handleSearch}
       />

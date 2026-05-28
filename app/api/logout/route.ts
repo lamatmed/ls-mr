@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server";
 
 export const POST = async () => {
-  return NextResponse.json(
-    { message: "انفصال الاتصال بنجاح" },
-    {
-      status: 200,
-      headers: {
-        "Set-Cookie": "userId=; Path=/; Max-Age=0; HttpOnly; Secure",
-      },
-    }
-  );
+  const res = NextResponse.json({ message: "Déconnexion réussie" }, { status: 200 });
+  res.cookies.set("userId", "", { path: "/", maxAge: 0, httpOnly: true });
+  res.cookies.set("isAdmin", "", { path: "/", maxAge: 0, httpOnly: true });
+  return res;
 };

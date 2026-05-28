@@ -1,7 +1,11 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
-
+@echo off
+cd /d D:\Nextjs\stock-local
+npm run dev
+pause
+  stock.bat
 First, run the development server:
 
 ```bash

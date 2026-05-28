@@ -9,13 +9,13 @@
         "button-name": "off"
       }
     ],
-    "axe/forms": [
+    "axe/forms": "off",
+    "button-type": "off",
+    "axe/structure": [
       "default",
       {
-        "select-name": "off",
-        "label": "off"
+        "list": "off"
       }
-    ],
-    "button-type": "off"
+    ]
   }
 }
