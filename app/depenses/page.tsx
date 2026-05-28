@@ -298,7 +298,9 @@ export default function DepensesPage() {
                             {getTypeIcon(expense.type)}
                           </div>
                           <div>
-                            <p className="font-black text-slate-900 dark:text-foreground text-lg">{expense.type}</p>
+                            <p className="font-black text-slate-900 dark:text-foreground text-lg">
+                              {expenseTypes.find(et => et.value === expense.type)?.label ?? expense.type}
+                            </p>
                             <div className="flex items-center gap-2 mt-1 opacity-60">
                               <FiCalendar size={12} />
                               <span className="text-[10px] font-bold tracking-widest uppercase">
