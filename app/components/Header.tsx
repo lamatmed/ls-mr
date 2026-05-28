@@ -188,7 +188,7 @@ const Header = () => {
 
             {/* Admin shortcuts — desktop only */}
             {user && admin && (
-              <div className="hidden xl:flex items-center gap-0.5 border-e border-border pe-1.5 me-0.5">
+              <div className="hidden lg:flex items-center gap-0.5 border-e border-border pe-1.5 me-0.5">
                 <Link href="/users" className="p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors" title={t.nav.users}>
                   <FiUser size={16} />
                 </Link>
