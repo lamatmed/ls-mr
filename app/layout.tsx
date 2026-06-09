@@ -3,6 +3,7 @@ import "./globals.css";
 import Footer from "./components/Footer";
 import { ToastContainer } from "react-toastify";
 import Header from "./components/Header";
+import Sidebar from "./components/Sidebar";
 import Background from "./components/Background";
 import { LanguageProvider } from "./context/LanguageContext";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -51,7 +52,10 @@ export default function RootLayout({
             <Background />
             <div className="min-h-screen flex flex-col relative z-10">
               <Header />
-              <main className="flex-grow">{children}</main>
+              <div className="flex flex-1 relative">
+                <Sidebar />
+                <main className="flex-grow min-w-0">{children}</main>
+              </div>
               <Footer />
             </div>
             <ToastContainer />

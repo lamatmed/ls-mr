@@ -161,26 +161,6 @@ const Header = () => {
                 )}
               </Link>
             )}
-            {user && navLinks.map((link) => {
-              const isActive = pathname === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  title={link.label}
-                  className={`relative flex-shrink-0 flex items-center gap-1 px-2 py-1.5 rounded-lg text-[12px] font-bold transition-all group ${isActive ? 'text-primary bg-primary/5' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
-                >
-                  <link.icon className={`${link.color} transition-transform group-hover:scale-110 flex-shrink-0`} size={15} />
-                  <span className="hidden 2xl:inline whitespace-nowrap">{link.label}</span>
-                  {isActive && (
-                    <motion.div
-                      layoutId="nav-active"
-                      className="absolute bottom-0.5 left-2 right-2 h-0.5 bg-primary/40 rounded-full"
-                    />
-                  )}
-                </Link>
-              );
-            })}
           </div>
 
           {/* Right actions */}
