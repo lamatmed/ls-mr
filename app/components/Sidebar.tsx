@@ -60,8 +60,21 @@ export default function Sidebar() {
       setIsCollapsed(true);
     }
 
+    const handleToggle = () => {
+      setIsCollapsed(prev => {
+        const next = !prev;
+        localStorage.setItem("sidebar-collapsed", String(next));
+        return next;
+      });
+    };
+
+    window.addEventListener("toggle-sidebar", handleToggle);
+
     const interval = setInterval(fetchUser, 10000);
-    return () => clearInterval(interval);
+    return () => {
+      window.removeEventListener("toggle-sidebar", handleToggle);
+      clearInterval(interval);
+    };
   }, []);
 
   const toggleCollapse = () => {

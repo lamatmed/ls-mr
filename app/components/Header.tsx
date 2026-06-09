@@ -137,15 +137,28 @@ const Header = () => {
         <div className="flex items-center justify-between gap-2 min-w-0">
 
           {/* Brand */}
-          <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
-            <div className="relative w-10 h-10 overflow-hidden rounded-xl shadow-lg ring-2 ring-primary/10 transition-all duration-300 group-hover:ring-primary/30 group-hover:scale-105 group-hover:shadow-primary/20">
-              <Image src={logo} alt="Logo" fill className="object-cover" />
-            </div>
-            <div className="hidden sm:flex flex-col leading-none gap-[3px]">
-              <span className="text-[7px] font-black text-muted-foreground/60 uppercase tracking-[0.5em]">local</span>
-              <span className="text-[15px] font-black bg-gradient-to-r from-indigo-500 to-violet-500 bg-clip-text text-transparent uppercase tracking-tight leading-none">STOCK</span>
-            </div>
-          </Link>
+          {/* Brand & Sidebar Toggle */}
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
+              <div className="relative w-10 h-10 overflow-hidden rounded-xl shadow-lg ring-2 ring-primary/10 transition-all duration-300 group-hover:ring-primary/30 group-hover:scale-105 group-hover:shadow-primary/20">
+                <Image src={logo} alt="Logo" fill className="object-cover" />
+              </div>
+              <div className="hidden sm:flex flex-col leading-none gap-[3px]">
+                <span className="text-[7px] font-black text-muted-foreground/60 uppercase tracking-[0.5em]">local</span>
+                <span className="text-[15px] font-black bg-gradient-to-r from-indigo-500 to-violet-500 bg-clip-text text-transparent uppercase tracking-tight leading-none">STOCK</span>
+              </div>
+            </Link>
+
+            {user && (
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent('toggle-sidebar'))}
+                className="hidden lg:flex w-8 h-8 items-center justify-center rounded-lg bg-secondary/60 border border-border/40 text-muted-foreground hover:text-foreground hover:bg-secondary transition-all cursor-pointer"
+                title="Afficher/Masquer la barre latérale"
+              >
+                <FiMenu size={16} />
+              </button>
+            )}
+          </div>
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex flex-1 items-center justify-center min-w-0 overflow-x-auto scrollbar-none gap-0.5">
