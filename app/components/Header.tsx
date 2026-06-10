@@ -52,6 +52,7 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [admin, setAdmin] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -97,6 +98,13 @@ const Header = () => {
       // silent fail
     }
   };
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     fetchUser();
@@ -225,90 +233,133 @@ const Header = () => {
 
             {/* Notification Bell */}
             {user && (
-              <div className="relative" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setNotifOpen(false); }}>
-                <button
-                  onClick={() => setNotifOpen(o => !o)}
-                  className="relative w-8 h-8 flex items-center justify-center rounded-lg bg-secondary/60 border border-border/40 text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
-                  title={t.nav.notifications}
-                >
-                  <FiBell size={15} className={alertProducts.length > 0 ? "text-amber-500" : ""} />
-                  {alertProducts.length > 0 && (
-                    <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute -top-1 -end-1 min-w-[16px] h-4 px-0.5 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center leading-none"
-                    >
-                      {alertProducts.length > 99 ? "99+" : alertProducts.length}
-                    </motion.span>
-                  )}
-                </button>
+              <>
+                {/* Mobile backdrop */}
                 <AnimatePresence>
-                  {notifOpen && (
+                  {notifOpen && isMobile && (
                     <motion.div
-                      initial={{ opacity: 0, y: -6, scale: 0.96 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -6, scale: 0.96 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute top-full mt-2 end-0 w-80 bg-card border border-border rounded-2xl shadow-2xl z-50 overflow-hidden"
-                    >
-                      {/* Dropdown header */}
-                      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-secondary/30">
-                        <div className="flex items-center gap-2">
-                          <FiBell size={14} className="text-amber-500" />
-                          <span className="text-xs font-black text-foreground uppercase tracking-wider">{t.nav.notifications}</span>
-                        </div>
-                        {alertProducts.length > 0 && (
-                          <span className="text-[9px] font-black bg-rose-500 text-white px-2 py-0.5 rounded-full">{alertProducts.length}</span>
-                        )}
-                      </div>
-
-                      {/* Product list */}
-                      <div className="max-h-72 overflow-y-auto">
-                        {alertProducts.length === 0 ? (
-                          <div className="py-8 flex flex-col items-center gap-2 text-muted-foreground">
-                            <FiBell size={24} className="opacity-30" />
-                            <p className="text-xs font-bold">{t.alerts.noAlerts}</p>
-                          </div>
-                        ) : (
-                          alertProducts.map(p => {
-                            const daysLeft = Math.ceil((new Date(p.expirationDate).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
-                            const isExpired = daysLeft <= 0;
-                            return (
-                              <div key={p.id} className={`flex items-start gap-3 px-4 py-3 border-b border-border/50 last:border-0 hover:bg-secondary/40 transition-colors ${isExpired ? 'bg-rose-500/5' : 'bg-amber-500/5'}`}>
-                                <div className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${isExpired ? 'bg-rose-100 dark:bg-rose-500/15 text-rose-500' : 'bg-amber-100 dark:bg-amber-500/15 text-amber-500'}`}>
-                                  {isExpired ? <FiAlertCircle size={14} /> : <FiAlertTriangle size={14} />}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-black text-foreground truncate">{p.name}</p>
-                                  <p className={`text-[10px] font-bold mt-0.5 ${isExpired ? 'text-rose-500' : 'text-amber-500'}`}>
-                                    {isExpired
-                                      ? t.alerts.expired
-                                      : t.alerts.remainingDays.replace('{days}', String(daysLeft))}
-                                  </p>
-                                </div>
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
-
-                      {/* Footer link */}
-                      {alertProducts.length > 0 && (
-                        <div className="px-4 py-3 border-t border-border bg-secondary/20">
-                          <Link
-                            href="/alerts"
-                            onClick={() => setNotifOpen(false)}
-                            className="flex items-center justify-center gap-1.5 text-[10px] font-black text-primary hover:text-primary/80 uppercase tracking-wider transition-colors"
-                          >
-                            <FiAlertCircle size={12} />
-                            {t.nav.viewAllAlerts}
-                          </Link>
-                        </div>
-                      )}
-                    </motion.div>
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => setNotifOpen(false)}
+                      className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[55]"
+                    />
                   )}
                 </AnimatePresence>
-              </div>
+
+                <div
+                  className="relative"
+                  onBlur={(e) => { if (!isMobile && !e.currentTarget.contains(e.relatedTarget)) setNotifOpen(false); }}
+                >
+                  <button
+                    onClick={() => setNotifOpen(o => !o)}
+                    className="relative w-8 h-8 flex items-center justify-center rounded-lg bg-secondary/60 border border-border/40 text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
+                    title={t.nav.notifications}
+                  >
+                    <FiBell size={15} className={alertProducts.length > 0 ? "text-amber-500" : ""} />
+                    {alertProducts.length > 0 && (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute -top-1 -end-1 min-w-[16px] h-4 px-0.5 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center leading-none"
+                      >
+                        {alertProducts.length > 99 ? "99+" : alertProducts.length}
+                      </motion.span>
+                    )}
+                  </button>
+
+                  <AnimatePresence>
+                    {notifOpen && (
+                      <motion.div
+                        initial={isMobile ? { y: "100%" } : { opacity: 0, y: -6, scale: 0.96 }}
+                        animate={isMobile ? { y: 0 } : { opacity: 1, y: 0, scale: 1 }}
+                        exit={isMobile ? { y: "100%" } : { opacity: 0, y: -6, scale: 0.96 }}
+                        transition={isMobile ? { type: "spring", damping: 30, stiffness: 280 } : { duration: 0.15 }}
+                        className={
+                          isMobile
+                            ? "fixed inset-x-0 bottom-0 bg-card border-t border-border rounded-t-3xl shadow-2xl z-[60] flex flex-col max-h-[75vh]"
+                            : "absolute top-full mt-2 end-0 w-80 bg-card border border-border rounded-2xl shadow-2xl z-50 overflow-hidden"
+                        }
+                      >
+                        {/* Mobile handle bar */}
+                        {isMobile && (
+                          <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+                            <div className="w-10 h-1 bg-border rounded-full" />
+                          </div>
+                        )}
+
+                        {/* Panel header */}
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-secondary/30 flex-shrink-0">
+                          <div className="flex items-center gap-2">
+                            <FiBell size={14} className="text-amber-500" />
+                            <span className="text-xs font-black text-foreground uppercase tracking-wider">{t.nav.notifications}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {alertProducts.length > 0 && (
+                              <span className="text-[9px] font-black bg-rose-500 text-white px-2 py-0.5 rounded-full">{alertProducts.length}</span>
+                            )}
+                            {isMobile && (
+                              <button
+                                onClick={() => setNotifOpen(false)}
+                                className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                              >
+                                <FiX size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Product list */}
+                        <div className="overflow-y-auto flex-1">
+                          {alertProducts.length === 0 ? (
+                            <div className="py-10 flex flex-col items-center gap-2 text-muted-foreground">
+                              <FiBell size={28} className="opacity-30" />
+                              <p className="text-xs font-bold">{t.alerts.noAlerts}</p>
+                            </div>
+                          ) : (
+                            alertProducts.map(p => {
+                              const daysLeft = Math.ceil((new Date(p.expirationDate).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+                              const isExpired = daysLeft <= 0;
+                              return (
+                                <div key={p.id} className={`flex items-start gap-3 px-4 py-3 border-b border-border/50 last:border-0 active:bg-secondary/60 hover:bg-secondary/40 transition-colors ${isExpired ? 'bg-rose-500/5' : 'bg-amber-500/5'}`}>
+                                  <div className={`mt-0.5 w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${isExpired ? 'bg-rose-100 dark:bg-rose-500/15 text-rose-500' : 'bg-amber-100 dark:bg-amber-500/15 text-amber-500'}`}>
+                                    {isExpired ? <FiAlertCircle size={15} /> : <FiAlertTriangle size={15} />}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-black text-foreground truncate">{p.name}</p>
+                                    <p className={`text-[11px] font-bold mt-0.5 ${isExpired ? 'text-rose-500' : 'text-amber-500'}`}>
+                                      {isExpired
+                                        ? t.alerts.expired
+                                        : t.alerts.remainingDays.replace('{days}', String(daysLeft))}
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+
+                        {/* Footer link */}
+                        {alertProducts.length > 0 && (
+                          <div className="px-4 py-3 border-t border-border bg-secondary/20 flex-shrink-0">
+                            <Link
+                              href="/alerts"
+                              onClick={() => setNotifOpen(false)}
+                              className="flex items-center justify-center gap-1.5 text-[10px] font-black text-primary hover:text-primary/80 uppercase tracking-wider transition-colors py-1"
+                            >
+                              <FiAlertCircle size={12} />
+                              {t.nav.viewAllAlerts}
+                            </Link>
+                          </div>
+                        )}
+
+                        {/* iOS safe area bottom padding */}
+                        {isMobile && <div className="h-safe-area-inset-bottom min-h-4 flex-shrink-0" />}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </>
             )}
 
             {/* Language Switcher */}
