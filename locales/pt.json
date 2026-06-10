@@ -66,7 +66,9 @@
     "logout": "Sair",
     "logoutConfirmTitle": "Deseja sair do sistema?",
     "logoutConfirmDesc": "Você precisará fazer login novamente para acessar o estoque.",
-    "version": "Versão 2"
+    "version": "Versão 2",
+    "notifications": "Notificações",
+    "viewAllAlerts": "Ver todos os alertas"
   },
   "home": {
     "loading": "Inicializando o sistema",

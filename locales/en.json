@@ -66,7 +66,9 @@
     "logout": "Logout",
     "logoutConfirmTitle": "Do you want to log out?",
     "logoutConfirmDesc": "You will need to log in again to access the stock.",
-    "version": "Version 2"
+    "version": "Version 2",
+    "notifications": "Notifications",
+    "viewAllAlerts": "View all alerts"
   },
   "home": {
     "loading": "Initializing system",
@@ -1016,4 +1018,4 @@
     "nameRequired": "Company name is required",
     "step": "Step {current} of {total}"
   }
-} 
+}

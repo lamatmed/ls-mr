@@ -66,7 +66,9 @@
     "logout": "Cerrar sesión",
     "logoutConfirmTitle": "¿Desea cerrar sesión?",
     "logoutConfirmDesc": "Deberá volver a iniciar sesión para acceder al inventario.",
-    "version": "Versión 2"
+    "version": "Versión 2",
+    "notifications": "Notificaciones",
+    "viewAllAlerts": "Ver todas las alertas"
   },
   "home": {
     "loading": "Inicializando sistema",

@@ -66,7 +66,9 @@
     "logout": "خروج",
     "logoutConfirmTitle": "هل تريد تسجيل الخروج؟",
     "logoutConfirmDesc": "سيتعين عليك تسجيل الدخول مرة أخرى للوصول إلى المخزون.",
-    "version": "الإصدار 2"
+    "version": "الإصدار 2",
+    "notifications": "الإشعارات",
+    "viewAllAlerts": "عرض كل التنبيهات"
   },
   "home": {
     "loading": "تهيئة النظام",
