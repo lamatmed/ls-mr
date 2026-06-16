@@ -2,6 +2,7 @@ import { UTApi } from "uploadthing/server";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import prisma from "@/lib/prisma";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const utapi = new UTApi({
   token: process.env.UPLOADTHING_TOKEN!,
@@ -13,20 +14,29 @@ const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 async function getAdminSession() {
   const cookieStore = await cookies();
   const userId = cookieStore.get("userId")?.value;
-  if (!userId) return null;
-  return prisma.user.findUnique({
+  if (!userId) return { session: null, userId: null };
+  const session = await prisma.user.findUnique({
     where: { id: userId },
     select: { admin: true },
   });
+  return { session, userId };
 }
 
 export async function POST(req: Request) {
-  const session = await getAdminSession();
+  const { session, userId } = await getAdminSession();
   if (!session) {
     return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
   }
   if (!session.admin) {
     return NextResponse.json({ error: "Réservé aux administrateurs." }, { status: 403 });
+  }
+
+  // 5 uploads max par minute par admin
+  if (!checkRateLimit(`upload:${userId}`, 5, 60_000)) {
+    return NextResponse.json(
+      { error: "Trop de requêtes. Réessayez dans une minute." },
+      { status: 429 }
+    );
   }
 
   try {

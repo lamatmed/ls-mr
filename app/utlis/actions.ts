@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
+
 interface SaleRecord {
   productId: string;
   quantity: number;
@@ -9,6 +9,7 @@ interface SaleRecord {
 import prisma from "@/lib/prisma";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 // Helper: lit le cookie de session et vérifie en base que l'utilisateur existe
 async function getSessionUser() {
@@ -19,6 +20,15 @@ async function getSessionUser() {
     where: { id: userId },
     select: { id: true, admin: true, isBlocked: true },
   });
+}
+
+// Helper: enregistre une action admin dans le journal d'audit
+async function auditLog(userId: string, action: string, details?: string) {
+  try {
+    await prisma.auditLog.create({ data: { userId, action, details } });
+  } catch {
+    // Non bloquant : l'audit ne doit jamais faire échouer l'action principale
+  }
 }
 
 // 🔹 Ajouter un utilisateur
@@ -100,7 +110,7 @@ export async function updateUser(
   const session = await getSessionUser();
   if (!session?.admin) return { error: "Non autorisé." };
   try {
-    const updateData: any = {
+    const updateData: { nom: string; admin: boolean; password?: string } = {
       nom,
       admin,
     };
@@ -141,6 +151,7 @@ export const blockUser = async (id: string) => {
       data: { isBlocked: true },
     });
 
+    await auditLog(session.id, "blockUser", `Utilisateur bloqué : ${user.nom}`);
     return { success: true, user: updatedUser };
   } catch (error) {
     console.error("Erreur lors du blocage de l'utilisateur:", error);
@@ -168,6 +179,7 @@ export const unblockUser = async (id: string) => {
       data: { isBlocked: false },
     });
 
+    await auditLog(session.id, "unblockUser", `Utilisateur débloqué : ${user.nom}`);
     return { success: true, user: updatedUser };
   } catch (error) {
     console.error("Erreur lors du débloquage de l'utilisateur:", error);
@@ -199,9 +211,9 @@ export async function deleteUser(id: string) {
   const session = await getSessionUser();
   if (!session?.admin) return { error: "Non autorisé." };
   try {
-    await prisma.user.delete({
-      where: { id },
-    });
+    const target = await prisma.user.findUnique({ where: { id }, select: { nom: true } });
+    await prisma.user.delete({ where: { id } });
+    await auditLog(session.id, "deleteUser", `Utilisateur supprimé : ${target?.nom ?? id}`);
     return { success: true };
   } catch (error) {
     console.error("Erreur lors de la suppression de l'utilisateur:", error);
@@ -719,9 +731,9 @@ export async function returnSale(saleId: string) {
 
       return { success: true };
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Erreur retour:", error);
-    return { error: error.message || "خطأ أثناء إرجاع المنتج" };
+    return { error: error instanceof Error ? error.message : "خطأ أثناء إرجاع المنتج" };
   }
 }
 
@@ -886,9 +898,9 @@ export async function addVersement(clientId: string, amount: number) {
 
       return { success: true };
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Erreur versement:", error);
-    return { error: `خطأ: ${error.message || "حدث خطأ غير متوقع"}` };
+    return { error: error instanceof Error ? `خطأ: ${error.message}` : "حدث خطأ غير متوقع" };
   }
 }
 
@@ -904,9 +916,9 @@ export async function addClient(nom: string, tel: string, nif: string | null) {
     });
 
     return { success: true, client: newClient };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Erreur lors de l'ajout du client:", error);
-    if (error.code === 'P2002') {
+    if (typeof error === "object" && error !== null && "code" in error && (error as { code: string }).code === "P2002") {
       return { error: "هذا الرقم مسجل لعميل آخر بالفعل!" };
     }
     return { error: "خطأ أثناء إضافة العميل" };
@@ -925,9 +937,9 @@ export async function updateClient(id: string, nom?: string, tel?: string, nif?:
     });
 
     return { success: true, client: updatedClient };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Erreur lors de la mise à jour du client:", error);
-    if (error.code === 'P2002') {
+    if (typeof error === "object" && error !== null && "code" in error && (error as { code: string }).code === "P2002") {
       return { error: "هذا الرقم مسجل لعميل آخر بالفعل!" };
     }
     return { error: "خطأ أثناء تعديل العميل" };
@@ -964,7 +976,7 @@ export async function deleteClient(id: string) {
     });
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Erreur lors de la suppression du client:", error);
     return { error: "خطأ أثناء حذف العميل" };
   }
@@ -985,7 +997,13 @@ export async function getAllClients() {
 // déduire si un nom d'utilisateur existe en mesurant le temps de réponse).
 const DUMMY_HASH = "$2b$10$invalidhashusedtoblindtimingattacksXXXXXXXXXXXXXXXX";
 
-export async function loginUser(nom: string, password: string) {
+export async function loginUser(nom: string, password: string, ip?: string) {
+  // 10 tentatives max par minute par IP (ou par nom si IP non fournie)
+  const rateLimitKey = `login:${ip ?? nom}`;
+  if (!checkRateLimit(rateLimitKey, 10, 60_000)) {
+    return { error: "Trop de tentatives. Réessayez dans une minute." };
+  }
+
   try {
     const user = await prisma.user.findFirst({
       where: { nom },
@@ -1045,11 +1063,12 @@ export async function deleteAllProducts() {
   const session = await getSessionUser();
   if (!session?.admin) return { error: "Non autorisé." };
   try {
+    const count = await prisma.product.count();
     await prisma.transaction.deleteMany();
     await prisma.sale.deleteMany();
     await prisma.invoice.deleteMany();
-    
     await prisma.product.deleteMany();
+    await auditLog(session.id, "deleteAllProducts", `${count} produit(s) supprimé(s)`);
     return { success: true };
   } catch (error) {
     console.error("Erreur lors de la suppression des produits:", error);
@@ -1061,8 +1080,10 @@ export async function deleteAllSales() {
   const session = await getSessionUser();
   if (!session?.admin) return { error: "Non autorisé." };
   try {
+    const count = await prisma.sale.count();
     await prisma.sale.deleteMany();
     await prisma.invoice.deleteMany();
+    await auditLog(session.id, "deleteAllSales", `${count} vente(s) supprimée(s)`);
     return { success: true };
   } catch (error) {
     console.error("Erreur lors de la suppression des ventes:", error);
@@ -1574,8 +1595,8 @@ export async function processPurchaseInvoice(
       }
       return { success: true };
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Purchase invoice error:", error);
-    return { error: error.message || "خطأ أثناء معالجة الفاتورة" };
+    return { error: error instanceof Error ? error.message : "خطأ أثناء معالجة الفاتورة" };
   }
 }
