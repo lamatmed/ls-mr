@@ -6,12 +6,20 @@ interface SaleRecord {
   totalPrice: number;
   purchasePrice: number;
 }
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
-
+import prisma from "@/lib/prisma";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
+
+// Helper: lit le cookie de session et vérifie en base que l'utilisateur existe
+async function getSessionUser() {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("userId")?.value;
+  if (!userId) return null;
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, admin: true, isBlocked: true },
+  });
+}
 
 // 🔹 Ajouter un utilisateur
 export async function addUser(
@@ -19,6 +27,8 @@ export async function addUser(
   password: string,
   admin: boolean = false
 ) {
+  const session = await getSessionUser();
+  if (!session?.admin) return { error: "Non autorisé." };
   try {
     const existingUser = await prisma.user.findFirst({
       where: { nom },
@@ -87,6 +97,8 @@ export async function updateUser(
   password?: string,
   admin: boolean = false
 ) {
+  const session = await getSessionUser();
+  if (!session?.admin) return { error: "Non autorisé." };
   try {
     const updateData: any = {
       nom,
@@ -94,7 +106,7 @@ export async function updateUser(
     };
 
     if (password) {
-      updateData.password = bcrypt.hashSync(password, 10);
+      updateData.password = await bcrypt.hash(password, 10);
     }
 
     await prisma.user.update({
@@ -111,6 +123,8 @@ export async function updateUser(
 
 // 🔹 Bloquer un utilisateur
 export const blockUser = async (id: string) => {
+  const session = await getSessionUser();
+  if (!session?.admin) return { error: "Non autorisé." };
   try {
     const user = await prisma.user.findUnique({ where: { id } });
 
@@ -136,6 +150,8 @@ export const blockUser = async (id: string) => {
 
 // 🔹 Débloquer un utilisateur
 export const unblockUser = async (id: string) => {
+  const session = await getSessionUser();
+  if (!session?.admin) return { error: "Non autorisé." };
   try {
     const user = await prisma.user.findUnique({ where: { id } });
 
@@ -180,6 +196,8 @@ export const isUserBlocked = async (nom: string) => {
 
 // 🔹 Supprimer un utilisateur
 export async function deleteUser(id: string) {
+  const session = await getSessionUser();
+  if (!session?.admin) return { error: "Non autorisé." };
   try {
     await prisma.user.delete({
       where: { id },
@@ -193,8 +211,12 @@ export async function deleteUser(id: string) {
 
 // 🔹 Récupérer tous les utilisateurs
 export async function getAllUsers() {
+  const session = await getSessionUser();
+  if (!session?.admin) return [];
   try {
-    const users = await prisma.user.findMany();
+    const users = await prisma.user.findMany({
+      select: { id: true, nom: true, admin: true, isBlocked: true },
+    });
     return users;
   } catch (error) {
     console.error("Erreur lors de la récupération des utilisateurs:", error);
@@ -653,18 +675,20 @@ export async function returnSale(saleId: string) {
       if (!sale) throw new Error("Vente non trouvée");
 
       // 2. Update stock
-      await tx.product.update({
-        where: { id: sale.productId },
-        data: { stock: { increment: sale.quantity } }
-      });
+      if (sale.productId) {
+        await tx.product.update({
+          where: { id: sale.productId },
+          data: { quantity: { increment: sale.quantity } }
+        });
+      }
 
       // 3. Update client solde (if client exists)
-      if (sale.invoice.clientId) {
+      if (sale.invoice?.clientId) {
         await tx.client.update({
           where: { id: sale.invoice.clientId },
           data: { solde: { increment: sale.totalPrice } }
         });
-        
+
         // 4. Update debt if linked
         if (sale.invoice.debtId && sale.invoice.debt) {
            const debt = sale.invoice.debt;
@@ -680,13 +704,15 @@ export async function returnSale(saleId: string) {
       }
 
       // 5. Update invoice total
-      await tx.invoice.update({
-        where: { id: sale.invoiceId },
-        data: { 
-          totalAmount: { decrement: sale.totalPrice },
-          purchaseTotal: { decrement: sale.purchasePrice }
-        }
-      });
+      if (sale.invoiceId) {
+        await tx.invoice.update({
+          where: { id: sale.invoiceId },
+          data: {
+            totalAmount: { decrement: sale.totalPrice },
+            purchaseTotal: { decrement: sale.purchasePrice }
+          }
+        });
+      }
 
       // 6. Delete the sale
       await tx.sale.delete({ where: { id: saleId } });
@@ -955,20 +981,26 @@ export async function getAllClients() {
 }
 
 
+// Dummy hash utilisé pour éviter les timing attacks (l'attaquant ne peut pas
+// déduire si un nom d'utilisateur existe en mesurant le temps de réponse).
+const DUMMY_HASH = "$2b$10$invalidhashusedtoblindtimingattacksXXXXXXXXXXXXXXXX";
+
 export async function loginUser(nom: string, password: string) {
   try {
     const user = await prisma.user.findFirst({
       where: { nom },
     });
 
-    if (!user) {
-      return { error: "المستخدم غير موجود." };
+    // Toujours exécuter bcrypt.compare même si l'utilisateur n'existe pas
+    const hashToCompare = user?.password ?? DUMMY_HASH;
+    const isPasswordValid = await bcrypt.compare(password, hashToCompare);
+
+    if (!user || !isPasswordValid) {
+      return { error: "Identifiants invalides." };
     }
 
-    const isPasswordValid = bcrypt.compareSync(password, user.password);
-
-    if (!isPasswordValid) {
-      return { error: "كلمة المرور غير صحيحة." };
+    if (user.isBlocked) {
+      return { error: "Compte suspendu. Contactez l'administrateur." };
     }
 
     const cookieStore = await cookies();
@@ -977,15 +1009,17 @@ export async function loginUser(nom: string, password: string) {
       secure: process.env.NODE_ENV === "production",
       path: "/",
       maxAge: 60 * 60 * 24,
+      sameSite: "strict",
     });
     cookieStore.set("isAdmin", user.admin ? "1" : "0", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       path: "/",
       maxAge: 60 * 60 * 24,
+      sameSite: "strict",
     });
 
-    return { success: true, user };
+    return { success: true, user: { id: user.id, nom: user.nom, admin: user.admin } };
   } catch (error) {
     console.error("Erreur lors de la connexion:", error);
     return { error: "Erreur lors de la connexion." };
@@ -1008,6 +1042,8 @@ export async function getLastProductCode() {
 }
 
 export async function deleteAllProducts() {
+  const session = await getSessionUser();
+  if (!session?.admin) return { error: "Non autorisé." };
   try {
     await prisma.transaction.deleteMany();
     await prisma.sale.deleteMany();
@@ -1022,6 +1058,8 @@ export async function deleteAllProducts() {
 }
 
 export async function deleteAllSales() {
+  const session = await getSessionUser();
+  if (!session?.admin) return { error: "Non autorisé." };
   try {
     await prisma.sale.deleteMany();
     await prisma.invoice.deleteMany();

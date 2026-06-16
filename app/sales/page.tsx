@@ -6,7 +6,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
-import SalesHistory from "../components/SelesHostory";
+import SalesHistory from "../components/SalesHistory";
 import { addMultipleSales, getAllClients, getAllProducts, getSalesHistory, getCompany, addVersement } from "../utlis/actions";
 import { useRouter } from "next/navigation";
 import { ArabicFont } from "../utlis/fonts";
@@ -256,15 +256,15 @@ export default function SalesPage() {
     if (amount) {
       try {
         const res = await addVersement(selectedClient.id, Number(amount));
-        if (res.success) {
+        if (!('error' in res)) {
           toast.success(t.sales.paymentSuccess);
           const clientsRes = await getAllClients();
-          if (clientsRes.success) {
+          if (!('error' in clientsRes)) {
             setClients(clientsRes.clients);
             setSelectedClient(clientsRes.clients.find((c: Client) => c.id === selectedClient.id) || null);
           }
         } else {
-          toast.error((res as any).error || t.sales.paymentError);
+          toast.error(res.error || t.sales.paymentError);
         }
       } catch {
         toast.error(t.sales.serverError);

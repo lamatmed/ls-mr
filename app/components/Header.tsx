@@ -66,9 +66,9 @@ const Header = () => {
   const { lang, setLang, t } = useLanguage();
   const { isDark, toggleTheme } = useTheme();
 
-  const fetchUser = async () => {
+  const fetchUser = async (signal?: AbortSignal) => {
     try {
-      const response = await fetch("/api/user");
+      const response = await fetch("/api/user", { signal });
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
@@ -77,7 +77,8 @@ const Header = () => {
         setUser(null);
         setAdmin(false);
       }
-    } catch {
+    } catch (e) {
+      if (e instanceof Error && e.name === "AbortError") return;
       setUser(null);
       setAdmin(false);
     }
@@ -107,16 +108,28 @@ const Header = () => {
   }, []);
 
   useEffect(() => {
-    fetchUser();
+    const controller = new AbortController();
+    fetchUser(controller.signal);
+
     const fetchCompany = async () => {
       const company = await getCompany();
       setCompanyName(company.name);
     };
     fetchCompany();
+
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
-    const interval = setInterval(fetchUser, 10000);
+
+    let isFetching = false;
+    const interval = setInterval(async () => {
+      if (isFetching) return;
+      isFetching = true;
+      await fetchUser();
+      isFetching = false;
+    }, 10000);
+
     return () => {
+      controller.abort();
       clearInterval(interval);
       window.removeEventListener("scroll", handleScroll);
     };

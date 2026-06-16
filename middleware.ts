@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 const PUBLIC_PATHS = ['/login', '/about', '/boarding'];
-const PROTECTED_PATHS = ['/dashboard', '/sales', '/products', '/clients', '/commandes', '/alerts', '/users', '/update', '/depenses', '/dettes', '/fournisseurs', '/transactions', '/categories', '/periode', '/list', '/chat'];
-const ADMIN_ONLY_PATHS = ['/dashboard'];
+const PROTECTED_PATHS = ['/dashboard', '/sales', '/products', '/clients', '/commandes', '/alerts', '/users', '/update', '/depenses', '/dettes', '/fournisseurs', '/transactions', '/categories', '/periode', '/list'];
+const ADMIN_ONLY_PATHS = ['/dashboard', '/users', '/depenses', '/periode'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

@@ -8,7 +8,7 @@ export async function GET() {
     const userId = cookieStore.get("userId")?.value;
 
     if (!userId) {
-      return NextResponse.json({ user: null }, { status: 200 });
+      return NextResponse.json({ user: null }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
@@ -17,16 +17,17 @@ export async function GET() {
     });
 
     if (!user) {
-      // Cookie obsolète — effacer la session
-      const res = NextResponse.json({ user: null }, { status: 200 });
-      res.cookies.set("userId", "", { path: "/", maxAge: 0, httpOnly: true });
-      res.cookies.set("isAdmin", "", { path: "/", maxAge: 0, httpOnly: true });
+      const res = NextResponse.json({ user: null }, { status: 401 });
+      res.cookies.set("userId", "", { path: "/", maxAge: 0, httpOnly: true, sameSite: "strict" });
+      res.cookies.set("isAdmin", "", { path: "/", maxAge: 0, httpOnly: true, sameSite: "strict" });
       return res;
     }
 
-    return NextResponse.json({ user: { ...user, role: user.admin ? "admin" : "user" } }, { status: 200 });
-  } catch (error) {
-    console.error("Erreur de vérification:", error);
-    return NextResponse.json({ user: null }, { status: 200 });
+    return NextResponse.json(
+      { user: { ...user, role: user.admin ? "admin" : "user" } },
+      { status: 200 }
+    );
+  } catch {
+    return NextResponse.json({ user: null }, { status: 500 });
   }
 }

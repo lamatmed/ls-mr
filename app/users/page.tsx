@@ -20,7 +20,7 @@ import {
   FiSettings,
   FiStar
 } from "react-icons/fi";
-import { User } from "@prisma/client";
+type User = { id: string; nom: string; admin: boolean; isBlocked: boolean };
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "../context/LanguageContext";
 
