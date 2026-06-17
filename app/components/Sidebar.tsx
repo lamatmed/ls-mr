@@ -85,10 +85,7 @@ export default function Sidebar() {
     });
   };
 
-  // Do not render sidebar if user is not logged in or if on public landing/login pages
-  // Or if on boarding page
-  const publicPages = ["/", "/login", "/boarding", "/about"];
-  if (!user || publicPages.includes(pathname)) {
+  if (!user) {
     return null;
   }
 
